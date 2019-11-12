@@ -20,7 +20,8 @@ start_time = 0
 swtich = 0
 packet_threshold = 0
 time_threshold = 3
-trial = 2
+trial = 5
+sniff_time = (trial * (3 + 3)) + 5 
 
 def set_packet(size, time):
     time = int(time - start_time)
@@ -80,6 +81,8 @@ def generate_signal():
             audio_signal.append(0)
             audio_time.append(t + j)
 
+    audio_signal.append(0)
+    audio_time.append(sniff_time)
             
     # Convert to 16-bit data
     audio = audio.astype(np.int16)
@@ -168,13 +171,13 @@ def set_baseline():
     scapy.sniff(prn=get_threshold, timeout=baseline_time)
     
     global packet_threshold
-    packet_threshold = sum(packet_counts.values())/baseline_time
+    packet_threshold = sum(packet_counts.values())/baseline_time + 10
     
     print(f"Count = {sum(packet_counts.values())}")
     print(f"Average = {packet_threshold}")
 
 def process_sniff():
-    sniff_time = 21
+    global sniff_time
     init_sniff(sniff_time)
     print("Start: " + str(start_time))
     scapy.sniff(prn=analyse, timeout=sniff_time)
@@ -191,7 +194,7 @@ def main():
     t2.start()
     # Have to find a way to end sniff after signal ends
     t1.join()
-    print("Sound signal sent")
+    print("Sound signal sent. Generating Graph...")
     t2.join()
     
     gs = gridspec.GridSpec(3, 2)
@@ -211,14 +214,12 @@ def main():
     plt.subplot(gs[1, :])
     plt.xlabel('Time (s)')
     plt.ylabel('Data Sent')
-    plt.title('Packet count')
     plt.xticks(range(0, max(data_time) + 1))
     plt.plot(np.array(data_time), np.array(reduced_data))
     
     plt.subplot(gs[2, :])
     plt.xlabel('Time (s)')
     plt.ylabel('Audio Playing')
-    plt.title('Audio Signals')
     plt.plot(np.array(audio_time), np.array(audio_signal))
     plt.xticks(range(0, max(data_time) + 1))
     plt.show()
